@@ -1,4 +1,5 @@
 using Api.Endpoints.Cliente.Dtos;
+using Api.Repository;
 
 namespace Api.Endpoints.Cliente;
 
@@ -19,34 +20,37 @@ public static class GetExtrato
 
     private static async Task<IResult> ObterExtratoPorClienteAsync(
         [FromRoute] int id,
+        [FromServices] RinhaRepository repository,
         CancellationToken ct)
     {
+        var cliente = await repository.GetCliente(id);
+        if (cliente is null)
+            return Results.NotFound("Cliente não encontrado!");
+
+        var transacoes = await repository.GetTransacoes(id);
+        
+        var transacoesCliente = new List<ExtratoResponse.TransacaoCliente>();
+        
+        foreach (var transacao in transacoes)
+        {
+            transacoesCliente.Add(new ExtratoResponse.TransacaoCliente()
+            {
+                Descricao = transacao.Descricao,
+                RealizadaEm = transacao.DataTransacao,
+                Tipo = 'D',
+                Valor = transacao.Valor
+            });
+        }
+            
         var result = new ExtratoResponse
         {
             Saldo = new()
             {
-                Total = -9098,
-                DataExtrato = DateTime.Parse("2024-01-17T02:34:41.217753Z"),
-                Limite = 100000
+                Total = cliente.Saldo,
+                DataExtrato = DateTime.UtcNow,
+                Limite = cliente.Limite
             },
-            UltimasTransacoes =
-            [
-                new()
-                {
-                    Valor = 10,
-                    Tipo = 'c',
-                    Descricao = "descricao",
-                    RealizadaEm = DateTime.Parse("2024-01-17T02:34:38.543030Z")
-                },
-
-                new()
-                {
-                    Valor = 90000,
-                    Tipo = 'd',
-                    Descricao = "descricao",
-                    RealizadaEm = DateTime.Parse("2024-01-17T02:34:38.543030Z")
-                }
-            ]
+            UltimasTransacoes = transacoesCliente
         };
         return Results.Ok(result);
     }

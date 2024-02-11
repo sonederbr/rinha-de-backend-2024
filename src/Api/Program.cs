@@ -1,10 +1,16 @@
 using Api.Endpoints.Cliente;
 using Api.Repository;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAppSettingsEnvironment();
-builder.Services.AddDbContext<DataContext>();
+
+builder.Services.AddDbContext<RinhaContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("RinhaContext")));
+
+builder.Services.AddScoped<RinhaRepository>();
+
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 builder.Services.AddProblemDetails();
 

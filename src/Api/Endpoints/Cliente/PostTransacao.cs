@@ -22,35 +22,37 @@ public static class PostTransacao
     private static async Task<IResult> CriarTransacaoPorClienteAsync(
         [FromRoute] int id,
         [FromBody] TransacaoRequest req,
-        [FromServices] RinhaRepository repository,
+        [FromServices] ClienteRepository repository,
         CancellationToken ct)
     {
-        var transacao = new Transacao()
+        var cliente = await repository.ObterCliente(id, ct);
+
+        if (cliente is null)
+            return Results.NotFound("Cliente nao encontrado!");
+
+        switch (req.Tipo)
         {
-            Valor = req.Valor,
-            Descricao = req.Descricao,
-            DataTransacao = DateTime.UtcNow,
-            ClienteId = id
-        };
-        
-        var cliente = await repository.GetCliente(id);
-        
-        if (req.Tipo == 'c')
-            cliente.Saldo += req.Valor;
-        else
-            cliente.Saldo -= req.Valor;
+            case 'c':
+                cliente.Saldo += req.Valor;
+                break;
+            case 'd':
+                cliente.Saldo -= req.Valor;
+                break;
+            default:
+                return Results.StatusCode(500);
+        }
 
         if (cliente.Saldo * -1 > cliente.Limite)
             return Results.StatusCode(422);
 
-        if(await repository.AtualizarCliente(cliente) < 1)
-            return Results.Problem(statusCode: 500);
+        cliente.Transacoes.Add(new Transacao(req.Descricao,req.Valor, req.Tipo,  id));
+
+        await repository.Atualizar(cliente, ct);
         
-        if(await repository.NovaTransacao(transacao) < 1)
-            return Results.Problem(statusCode: 501);
-        
-        cliente = await repository.GetCliente(id);
-        
+        var ret = await repository.SalvarAlteracoesAsync(ct);
+        if (ret < 1)
+            return Results.StatusCode(500);
+
         var result = new TransacaoResponse
         {
             Saldo = cliente.Saldo,

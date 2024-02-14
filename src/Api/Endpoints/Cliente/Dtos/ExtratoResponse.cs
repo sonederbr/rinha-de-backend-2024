@@ -16,7 +16,7 @@ public class ExtratoResponse
     {
         public int Valor { get; set; }
         public char Tipo { get; set; }
-        public string Descricao { get; set; }
+        public string? Descricao { get; set; }
         public DateTime RealizadaEm { get; set; }
     }
 }

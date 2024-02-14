@@ -20,28 +20,13 @@ public static class GetExtrato
 
     private static async Task<IResult> ObterExtratoPorClienteAsync(
         [FromRoute] int id,
-        [FromServices] RinhaRepository repository,
+        [FromServices] ClienteRepository repository,
         CancellationToken ct)
     {
-        var cliente = await repository.GetCliente(id);
+        var cliente = await repository.ObterClienteTransacao(id, ct);
         if (cliente is null)
             return Results.NotFound("Cliente não encontrado!");
-
-        var transacoes = await repository.GetTransacoes(id);
         
-        var transacoesCliente = new List<ExtratoResponse.TransacaoCliente>();
-        
-        foreach (var transacao in transacoes)
-        {
-            transacoesCliente.Add(new ExtratoResponse.TransacaoCliente()
-            {
-                Descricao = transacao.Descricao,
-                RealizadaEm = transacao.DataTransacao,
-                Tipo = 'D',
-                Valor = transacao.Valor
-            });
-        }
-            
         var result = new ExtratoResponse
         {
             Saldo = new()
@@ -50,7 +35,14 @@ public static class GetExtrato
                 DataExtrato = DateTime.UtcNow,
                 Limite = cliente.Limite
             },
-            UltimasTransacoes = transacoesCliente
+            UltimasTransacoes = cliente.Transacoes.Select(
+                t => new ExtratoResponse.TransacaoCliente()
+                {
+                    Descricao = t.Descricao,
+                    RealizadaEm = t.DataTransacao, 
+                    Tipo = t.Tipo, 
+                    Valor = t.Valor
+                }).ToList()
         };
         return Results.Ok(result);
     }

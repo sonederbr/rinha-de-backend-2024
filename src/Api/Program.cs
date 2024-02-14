@@ -1,4 +1,5 @@
 using Api.Endpoints.Cliente;
+using Api.Model;
 using Api.Repository;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,10 +7,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAppSettingsEnvironment();
 
-builder.Services.AddDbContext<RinhaContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("RinhaContext")));
+builder.Services.AddDbContext<RinhaDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("RinhaDbContext")));
 
-builder.Services.AddScoped<RinhaRepository>();
+builder.Services.AddScoped(typeof(ClienteRepository));
 
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 builder.Services.AddProblemDetails();

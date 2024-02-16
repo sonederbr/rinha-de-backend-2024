@@ -16,6 +16,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <FunctionsPreservedDependencies Include="Microsoft.Extensions.DependencyModel.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Content Update="appsettings.Test.json">
             <DependentUpon>appsettings.json</DependentUpon>
         </Content>

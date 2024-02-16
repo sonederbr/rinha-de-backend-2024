@@ -23,12 +23,12 @@ public class GlobalExceptionHandlerMiddleware(ILogger<GlobalExceptionHandlerMidd
                 Status = StatusCodes.Status500InternalServerError
             };
 
-            if(environment?.IsDevelopment() == true)
-            {
+            // if(environment?.IsDevelopment() == true)
+            // {
                 problemDetails.Type = ex.GetType().ToString();
                 problemDetails.Title = ex.Message;
                 problemDetails.Detail = ex.StackTrace;
-            }
+            // }
 
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;

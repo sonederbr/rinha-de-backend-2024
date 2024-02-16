@@ -13,11 +13,11 @@ services:
       - "8081:8080"
     depends_on:
       - db
-    deploy:
-      resources:
-        limits:
-          cpus: "0.2"
-          memory: "130MB"
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "0.2"
+    #       memory: "130MB"
   api02:
     <<: *api
     hostname: api02
@@ -33,11 +33,11 @@ services:
       - api02
     ports:
       - "9999:9999"
-    deploy:
-      resources:
-        limits:
-          cpus: "0.15"
-          memory: "20MB"
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "0.15"
+    #       memory: "20MB"
   db:
     image: postgres:latest
     hostname: db
@@ -49,11 +49,11 @@ services:
       - "5432:5432"
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    deploy:
-      resources:
-        limits:
-          cpus: "0.95"
-          memory: "270MB"
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "0.95"
+    #       memory: "270MB"
 
 networks:
   default:

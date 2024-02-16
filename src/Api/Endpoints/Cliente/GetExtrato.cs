@@ -38,10 +38,10 @@ public static class GetExtrato
             UltimasTransacoes = cliente.Transacoes.Select(
                 t => new ExtratoResponse.TransacaoCliente()
                 {
+                    Valor = t.Valor,
+                    Tipo = t.Tipo, 
                     Descricao = t.Descricao,
                     RealizadaEm = t.DataTransacao, 
-                    Tipo = t.Tipo, 
-                    Valor = t.Valor
                 }).ToList()
         };
         return Results.Ok(result);

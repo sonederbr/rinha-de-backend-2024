@@ -25,6 +25,18 @@ public static class PostTransacao
         [FromServices] ClienteRepository repository,
         CancellationToken ct)
     {
+        if(id <= 0) 
+            return Results.BadRequest("Id do cliente não informado!");
+        
+        if(req.Valor <= 0) 
+            return Results.BadRequest("Valor deve ser um número inteiro positivo!");
+        
+        if(string.IsNullOrWhiteSpace(req.Tipo) || !req.Tipo.Equals("c", StringComparison.InvariantCultureIgnoreCase) && !req.Tipo.Equals("d", StringComparison.InvariantCultureIgnoreCase)) 
+            return Results.BadRequest("Tipo deve ser c para crédito e d para débito!");
+        
+        if(string.IsNullOrWhiteSpace(req.Descricao) || req.Descricao?.Length < 1 || req.Descricao?.Length > 10)
+            return Results.BadRequest("Descricao deve ser uma string de 1 a 10 caracteres!");
+
         var cliente = await repository.ObterCliente(id, ct);
 
         if (cliente is null)
@@ -32,26 +44,29 @@ public static class PostTransacao
 
         switch (req.Tipo)
         {
-            case 'c':
+            case "c":
                 cliente.Saldo += req.Valor;
                 break;
-            case 'd':
+            case "d":
                 cliente.Saldo -= req.Valor;
                 break;
             default:
-                return Results.StatusCode(500);
+                return Results.BadRequest("tipo deve ser c para crédito e d para débito!");
         }
 
-        if (cliente.Saldo * -1 > cliente.Limite)
-            return Results.StatusCode(422);
-
-        cliente.Transacoes.Add(new Transacao(req.Descricao,req.Valor, req.Tipo,  id));
+        if ((req.Tipo.Equals("d")))
+        {
+            if (Math.Abs(cliente.Saldo) > cliente.Limite)
+                return Results.StatusCode(422);
+        }
+        
+        cliente.Transacoes.Add(new Transacao(req.Descricao, req.Valor, req.Tipo,  id));
 
         await repository.Atualizar(cliente, ct);
         
         var ret = await repository.SalvarAlteracoesAsync(ct);
         if (ret < 1)
-            return Results.StatusCode(500);
+            return Results.StatusCode(503);
 
         var result = new TransacaoResponse
         {

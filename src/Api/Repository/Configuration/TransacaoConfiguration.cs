@@ -23,7 +23,7 @@ public class TransacaoConfiguration : IEntityTypeConfiguration<Transacao>
         
         builder.Property(p => p.Descricao)
             .HasColumnName("descricao")
-            .HasMaxLength(250)
+            .HasMaxLength(10)
             .IsRequired();
         
         builder.Property(p => p.DataTransacao)

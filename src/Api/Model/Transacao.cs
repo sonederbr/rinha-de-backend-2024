@@ -6,7 +6,7 @@ public class Transacao(
     string tipo,
     int clienteId)
 {
-    protected Transacao() : this(default, default, default, default)
+    public Transacao() : this(default, default, default, default)
     {
     }
     

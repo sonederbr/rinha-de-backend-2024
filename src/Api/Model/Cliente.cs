@@ -1,8 +1,8 @@
 ﻿namespace Api.Model;
 
-public class Cliente(int limite, int saldo)
+public class Cliente(int id, int limite, int saldo)
 {
-    protected Cliente() : this(default, default)
+    public Cliente() : this(default, default, default)
     {
     }
     

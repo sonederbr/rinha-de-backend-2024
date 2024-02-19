@@ -11,20 +11,39 @@ public sealed class ClienteRepository(RinhaDbContext rinhaDbContext) : BaseRepos
     {
         return await _rinhaDbContext.Clientes.FindAsync(id, cancellationToken);
     }
-    
+
     public async Task<Cliente?> ObterClienteTransacao(int id, CancellationToken cancellationToken = default)
     {
         _rinhaDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-        var cliente =  await _rinhaDbContext.Clientes.FindAsync(id, cancellationToken);
-        if (cliente is null)
-            return null;
+        var query = await _rinhaDbContext.QueryAsync<dynamic>(cancellationToken,
+            text: @"SELECT 
+                     c.id           AS Id, 
+                     c.saldo        AS Saldo, 
+                     c.limite       AS Limite, 
+                     t.id           AS Transacoes_Id,
+                     t.valor        AS Transacoes_Valor,
+                     t.tipo         AS Transacoes_Tipo, 
+                     t.descricao    AS Transacoes_Descricao, 
+                     t.realizada_em AS Transacoes_DataTransacao, 
+                     t.idcliente    AS Transacoes_ClienteId
+                  FROM cliente c
+                  LEFT JOIN transacao t ON t.idcliente = c.id
+                 WHERE c.id = @Id
+                 ORDER BY t.realizada_em DESC
+                 LIMIT 10;",
+            parameters: new
+            {
+                Id = id
+            });
+        
+        Slapper.AutoMapper.Configuration.AddIdentifiers(typeof(Cliente), new List<string> { "Id" });
+        Slapper.AutoMapper.Configuration.AddIdentifiers(typeof(Transacao), new List<string> { "Id" });
 
-        cliente.Transacoes = _rinhaDbContext.Transacoes
-            .FromSql($"SELECT * FROM fc_obter_transacoes({id})").ToList();
+        var cliente = (Slapper.AutoMapper.MapDynamic<Cliente>(query) as IEnumerable<Cliente>).ToList();
 
-        return cliente;
+        return cliente?.First();
     }
-    
+
     public Task Atualizar(Cliente entity, CancellationToken cancellationToken = default)
     {
         _rinhaDbContext.Set<Cliente>().Update(entity);

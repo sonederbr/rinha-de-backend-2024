@@ -12,10 +12,10 @@ SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
-CREATE TABLE cliente (
-                         id integer PRIMARY KEY NOT NULL,
-                         saldo integer NOT NULL,
-                         limite integer NOT NULL
+CREATE UNLOGGED TABLE cliente (
+     id integer PRIMARY KEY NOT NULL,
+     saldo integer NOT NULL,
+     limite integer NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_idcliente
@@ -23,13 +23,13 @@ CREATE UNIQUE INDEX idx_idcliente
 
 CLUSTER cliente USING idx_idcliente;
 
-CREATE TABLE transacao (
-                           id SERIAL PRIMARY KEY,
-                           valor integer NOT NULL,
-                           tipo char(1) NOT NULL,
-                           descricao varchar(250) NOT NULL,
-                           realizada_em timestamp NOT NULL,
-                           idcliente integer NOT NULL
+CREATE UNLOGGED TABLE transacao (
+   id SERIAL PRIMARY KEY,
+   valor integer NOT NULL,
+   tipo char(1) NOT NULL,
+   descricao varchar(250) NOT NULL,
+   realizada_em timestamp NOT NULL,
+   idcliente integer NOT NULL
 );
 
 -- CREATE INDEX idx_transacao_idcliente 
@@ -51,7 +51,7 @@ AS $$
 BEGIN
 RETURN QUERY (
     SELECT 
-		    t.id,
+		t.id,
         t.valor,
         t.tipo,
         t.descricao,

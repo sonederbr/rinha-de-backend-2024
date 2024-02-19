@@ -12,8 +12,6 @@ public class GlobalExceptionHandlerMiddleware(ILogger<GlobalExceptionHandlerMidd
         }
         catch (Exception ex)
         {
-            Log.Error(ex, $"Global Exception");
-
             var environment = context.RequestServices.GetService<IWebHostEnvironment>();
 
             var problemDetails = new ProblemDetails

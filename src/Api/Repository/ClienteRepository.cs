@@ -1,52 +1,104 @@
 using Api.Model;
-using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Api.Repository;
 
-public sealed class ClienteRepository(RinhaDbContext rinhaDbContext) : BaseRepository(rinhaDbContext)
+public  class ClienteRepository
 {
-    private readonly RinhaDbContext _rinhaDbContext = rinhaDbContext;
+    private readonly NpgsqlDataSource _datasource;
+    private readonly NpgsqlConnection _connection;
 
-    public async Task<Cliente?> ObterCliente(int id, CancellationToken cancellationToken = default)
+    public ClienteRepository(NpgsqlDataSource datasource, NpgsqlConnection connection)
     {
-        return await _rinhaDbContext.Clientes.FindAsync(id, cancellationToken);
+        _datasource = datasource;
+        _connection = connection;
     }
-
-    public async Task<Cliente?> ObterClienteTransacao(int id, CancellationToken cancellationToken = default)
+    
+    public virtual async Task<Cliente?> ObterClienteAsync(int id, CancellationToken ct = default)
     {
-        _rinhaDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-        var query = await _rinhaDbContext.QueryAsync<dynamic>(cancellationToken,
-            text: @"SELECT 
-                     c.id           AS Id, 
-                     c.saldo        AS Saldo, 
-                     c.limite       AS Limite, 
-                     t.id           AS Transacoes_Id,
-                     t.valor        AS Transacoes_Valor,
-                     t.tipo         AS Transacoes_Tipo, 
-                     t.descricao    AS Transacoes_Descricao, 
-                     t.realizada_em AS Transacoes_DataTransacao, 
-                     t.idcliente    AS Transacoes_ClienteId
-                  FROM cliente c
-                  LEFT JOIN transacao t ON t.idcliente = c.id
-                 WHERE c.id = @Id
-                 ORDER BY t.realizada_em DESC
-                 LIMIT 10;",
-            parameters: new
+        Cliente? cliente = null;
+        await using var cmd = _datasource.CreateCommand();
+        cmd.CommandText = @"SELECT id, limite, saldo
+                              FROM cliente
+                             WHERE id = $1
+                             LIMIT 1;";
+
+        cmd.Parameters.AddWithValue(id);
+
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            cliente ??= new Cliente(
+                reader.GetInt32(0),
+                reader.GetInt32(1),
+                reader.GetInt32(2));
+        }
+
+        return cliente;
+    }
+    
+    public virtual async Task<Cliente?> ObterExtratoAsync(int id, CancellationToken ct = default)
+    {
+        Cliente? cliente = null;
+
+        await using (_connection)
+        {
+            await _connection.OpenAsync(ct);
+
+            await using (var cmd = _connection.CreateCommand())
             {
-                Id = id
-            });
-        
-        Slapper.AutoMapper.Configuration.AddIdentifiers(typeof(Cliente), new List<string> { "Id" });
-        Slapper.AutoMapper.Configuration.AddIdentifiers(typeof(Transacao), new List<string> { "Id" });
+                cmd.CommandText = @"SELECT c.id           AS Id
+                                         , c.limite       AS Limite
+                                         , c.saldo        AS Saldo
+                                         , t.descricao    AS Descricao
+                                         , t.valor        AS Valor
+                                         , t.tipo         AS Tipo
+                                         , t.realizada_em AS DataTransacao
+                                      FROM cliente c
+                                      LEFT JOIN transacao t ON t.idcliente = c.id
+                                     WHERE c.id = $1
+                                     ORDER BY t.realizada_em DESC
+                                     LIMIT 10;";
 
-        var cliente = (Slapper.AutoMapper.MapDynamic<Cliente>(query) as IEnumerable<Cliente>).ToList();
+                cmd.Parameters.AddWithValue(id);
 
-        return cliente?.First();
+                await using (var reader = await cmd.ExecuteReaderAsync(ct))
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        cliente ??= new Cliente(
+                            reader.GetInt32(0),
+                            reader.GetInt32(1),
+                            reader.GetInt32(2));
+
+                        if(!reader.IsDBNull(3))
+                            cliente.Transacoes.Add(new Transacao(
+                                descricao: reader.GetString(3),
+                                valor: reader.GetInt32(4),
+                                tipo: reader.GetString(5)));
+                    }
+                }
+            }
+            return cliente;
+        }
     }
-
-    public Task Atualizar(Cliente entity, CancellationToken cancellationToken = default)
+    
+    public virtual async Task<IReadOnlyCollection<Cliente>> ObterTodosClientesAsync(CancellationToken ct = default)
     {
-        _rinhaDbContext.Set<Cliente>().Update(entity);
-        return Task.CompletedTask;
+        var clientes = new List<Cliente>();
+        await using var cmd = _datasource.CreateCommand();
+        cmd.CommandText = @"SELECT id, limite, saldo
+                              FROM cliente
+                             ORDER BY id ASC ;";
+
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            clientes.Add(new Cliente(
+                reader.GetInt32(0),
+                reader.GetInt32(1),
+                reader.GetInt32(2)));
+        }
+        return clientes.AsReadOnly();
     }
 }

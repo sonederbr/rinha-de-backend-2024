@@ -1,5 +1,7 @@
 using Api.Endpoints.Cliente.Dtos;
 using Api.Repository;
+using Microsoft.Extensions.Caching.Memory;
+using Npgsql;
 
 namespace Api.Endpoints.Cliente;
 
@@ -13,7 +15,7 @@ public static class GetExtrato
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status500InternalServerError)
             .AllowAnonymous()
-            .WithName("ObterExtrato")
+            .WithName("ObterExtratoAsync")
             .WithTags("clientes")
             .WithOpenApi();
     }
@@ -21,17 +23,18 @@ public static class GetExtrato
     private static async Task<IResult> ObterExtratoPorClienteAsync(
         [FromRoute] int id,
         [FromServices] ClienteRepository repository,
+        [FromServices] IMemoryCache cache,
         CancellationToken ct)
     {
-        var cliente = await repository.ObterClienteTransacao(id, ct);
-        if (cliente is null)
+        if (cache.Get(id) is null)
             return Results.NotFound("Cliente não encontrado!");
         
+        var cliente = await repository.ObterClienteAsync(id, ct);
         var result = new ExtratoResponse
         {
             Saldo = new()
             {
-                Total = cliente.Saldo,
+                Total = cliente!.Saldo,
                 DataExtrato = DateTime.UtcNow,
                 Limite = cliente.Limite
             },

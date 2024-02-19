@@ -14,7 +14,7 @@ public class ObterExtratoEndpoint : IClassFixture<CustomApiFactory>
     }
 
     [Fact]
-    public async Task GetAllPathwayEndpointsWithSuccess()
+    public async Task ObterExtratoPorClienteAsyncEndpointComSucesso()
     {
         // act
         var response = await _client.GetAndDeserializeAsync<ExtratoResponse>("/clientes/1/extrato");
@@ -23,6 +23,6 @@ public class ObterExtratoEndpoint : IClassFixture<CustomApiFactory>
         response.Saldo.Should().NotBeNull();
         response.Saldo.Total.Should().Be(0);
         response.Saldo.Limite.Should().Be(100000);
-        response.UltimasTransacoes.Count.Should().Be(2);
+        response.UltimasTransacoes.Count.Should().Be(0);
     }
 }

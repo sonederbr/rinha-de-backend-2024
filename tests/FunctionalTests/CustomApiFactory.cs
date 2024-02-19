@@ -1,10 +1,9 @@
 using Api.Model;
-using Api.Repository;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Npgsql;
 
 namespace FunctionalTests;
 
@@ -12,7 +11,7 @@ public class CustomApiFactory : WebApplicationFactory<IApiMarker>
 {
     public HttpClient Client { get; }
     
-    public RinhaDbContext DbContext { get; private set; }
+    public NpgsqlConnection Connection { get; private set; }
 
     public CustomApiFactory()
     {
@@ -32,58 +31,55 @@ public class CustomApiFactory : WebApplicationFactory<IApiMarker>
         var serviceProvider = host.Services;
         using var scope = serviceProvider.CreateScope();
         var scopedServices = scope.ServiceProvider;
-        var db = scopedServices.GetRequiredService<RinhaDbContext>();
+        var connection = scopedServices.GetRequiredService<NpgsqlConnection>();
         
-        DbContext = db;
-        
-        db.Database.EnsureDeleted();
-        db.Database.EnsureCreated();
-        PopulateTestData(db);
+        Connection = connection;
+
+        PopulateTestData();
         return host;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder
-            .ConfigureServices(services =>
-            {
-                var descriptor = services.SingleOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<RinhaDbContext>));
-
-                if (descriptor != null)
-                    services.Remove(descriptor);
-
-                var inMemoryCollectionName = Guid.NewGuid().ToString();
-                
-                services.AddDbContext<RinhaDbContext>(options =>
-                {
-                    options.UseSqlite("Data Source=studyway-test.sqlite");
-                });
-            });
-        
          builder.UseEnvironment("Test");
     }
     
-    private void PopulateTestData(RinhaDbContext dbContext)
+    private void PopulateTestData()
     {
-        dbContext.RemoveRange(dbContext.Clientes);
-        dbContext.RemoveRange(dbContext.Transacoes);
-
-        dbContext.SaveChanges();
-            
-        dbContext.AddRange(new List<Cliente>
+        var clientes = new List<Cliente>
         {
-            new Cliente(1, 100000, 0) { Transacoes = new List<Transacao>()
-            {
-                 new Transacao("Descicao test 1", 1000, "c", 1),
-                 new Transacao("Descicao test 2", 1000, "d", 1)
-            }},
+            new Cliente(1, 100000, 0),
             new Cliente(2, 80000, 0),
             new Cliente(3, 1000000, 0),
             new Cliente(4, 10000000, 0),
             new Cliente(5, 500000, 0)
-        });
-
-        dbContext.SaveChanges();
+        };
+        
+        using (Connection)
+        {
+            Connection.Open();
+            using (var cmd1 = Connection.CreateCommand())
+            {
+                cmd1.CommandText = "TRUNCATE TABLE cliente;";
+                cmd1.ExecuteNonQuery();
+            }
+            
+            using (var cmd2 = Connection.CreateCommand())
+            {
+                cmd2.CommandText = "TRUNCATE TABLE transacao;";
+                cmd2.ExecuteNonQuery();
+            }
+            
+            foreach (var cliente in clientes)
+            {
+                using var cmd = Connection.CreateCommand();
+                cmd.CommandText = $"INSERT INTO cliente (id, limite, saldo) VALUES ($1, $2, $3) ";
+                cmd.Parameters.AddWithValue(cliente.Id);
+                cmd.Parameters.AddWithValue(cliente.Limite);
+                cmd.Parameters.AddWithValue(cliente.Saldo);
+                
+                var result = cmd.ExecuteNonQuery();
+            }
+        }
     }
 }

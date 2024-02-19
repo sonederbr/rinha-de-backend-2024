@@ -4,21 +4,14 @@
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-        <InvariantGlobalization>true</InvariantGlobalization>
+        <OptimizationPreference>Speed</OptimizationPreference>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Dapper" Version="2.1.28" />
+        <PackageReference Include="Npgsql" Version="8.0.2" />
+        <PackageReference Include="Npgsql.DependencyInjection" Version="8.0.2" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.1"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.1" />
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
-        <PackageReference Include="SlapperAutomapper.Core" Version="1.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-        <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <FunctionsPreservedDependencies Include="Microsoft.Extensions.DependencyModel.dll" />
     </ItemGroup>
 
     <ItemGroup>
@@ -28,6 +21,10 @@
         <Content Update="appsettings.Development.json">
             <DependentUpon>appsettings.json</DependentUpon>
         </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Repository\" />
     </ItemGroup>
 
     <PropertyGroup>

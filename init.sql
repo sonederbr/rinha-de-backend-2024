@@ -34,39 +34,44 @@ CREATE UNLOGGED TABLE transacao (
 
 -- CREATE INDEX idx_transacao_idcliente 
 -- ON transacao (idcliente);
-
 -- CLUSTER transacao USING idx_transacao_idcliente;
 
+CREATE OR REPLACE FUNCTION atualiza_saldo_cliente_and_insere_transacao(
+    p_cliente_id INT,
+    p_valor INT,
+    p_tipo VARCHAR(1),
+    p_descricao VARCHAR(10)
+) RETURNS TABLE(novo_saldo INT, novo_limite INT, crebitou INT) AS $$
+DECLARE
+    v_saldo INT;
+    v_limite INT;
+    v_row_count INT = 0;
 
-CREATE OR REPLACE FUNCTION fc_obter_transacoes(p_cliente_id integer)
-RETURNS TABLE (
-    id integer,
-    valor integer,
-    tipo char(1),
-    descricao varchar(250),
-    realizada_em timestamp,
-	idcliente integer
-)
-AS $$
 BEGIN
-RETURN QUERY (
-    SELECT 
-		t.id,
-        t.valor,
-        t.tipo,
-        t.descricao,
-        t.realizada_em,
-        t.idcliente
-            FROM 
-            transacao AS t
-        WHERE 
-            t.idcliente = p_cliente_id
-        ORDER BY 
-            t.realizada_em DESC
-        LIMIT 10
-       );
-END; $$
-LANGUAGE plpgsql;
+    IF p_valor = 0 THEN
+        return;
+    END IF;
+
+    LOCK TABLE cliente IN ROW EXCLUSIVE MODE;
+    SELECT saldo, limite INTO v_saldo, v_limite FROM cliente WHERE id = p_cliente_id FOR NO KEY UPDATE;
+
+    IF p_tipo = 'd' THEN
+        v_saldo = v_saldo - p_valor;
+        UPDATE cliente SET saldo = saldo - p_valor WHERE id = p_cliente_id AND abs(saldo - p_valor) <= limite;
+        GET diagnostics v_row_count = row_count;
+    ELSIF p_tipo = 'c' THEN
+        v_saldo = v_saldo + p_valor;
+        UPDATE cliente SET saldo = saldo + p_valor WHERE id = p_cliente_id;
+        GET diagnostics v_row_count = row_count;
+    END IF;
+
+    IF v_row_count > 0 THEN
+        INSERT INTO transacao(valor, tipo, descricao, realizada_em, idcliente)
+        VALUES (p_valor, p_tipo, p_descricao, (now() AT TIME ZONE 'UTC'), p_cliente_id);
+    END IF;
+
+    RETURN QUERY SELECT v_saldo, v_limite, v_row_count;
+END; $$ LANGUAGE plpgsql;
 
 INSERT INTO cliente (id, saldo, limite) VALUES (1, 0, 100000);
 INSERT INTO cliente (id, saldo, limite) VALUES (2, 0, 80000);

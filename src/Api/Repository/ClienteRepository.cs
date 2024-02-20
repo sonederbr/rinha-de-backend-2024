@@ -1,9 +1,10 @@
+using Api.Endpoints.Cliente.Dtos;
 using Api.Model;
 using Npgsql;
 
 namespace Api.Repository;
 
-public  class ClienteRepository
+public class ClienteRepository
 {
     private readonly NpgsqlDataSource _datasource;
     private readonly NpgsqlConnection _connection;
@@ -14,29 +15,6 @@ public  class ClienteRepository
         _connection = connection;
     }
     
-    public virtual async Task<Cliente?> ObterClienteAsync(int id, CancellationToken ct = default)
-    {
-        Cliente? cliente = null;
-        await using var cmd = _datasource.CreateCommand();
-        cmd.CommandText = @"SELECT id, limite, saldo
-                              FROM cliente
-                             WHERE id = $1
-                             LIMIT 1;";
-
-        cmd.Parameters.AddWithValue(id);
-
-        await using var reader = await cmd.ExecuteReaderAsync(ct);
-        while (await reader.ReadAsync(ct))
-        {
-            cliente ??= new Cliente(
-                reader.GetInt32(0),
-                reader.GetInt32(1),
-                reader.GetInt32(2));
-        }
-
-        return cliente;
-    }
-    
     public virtual async Task<Cliente?> ObterExtratoAsync(int id, CancellationToken ct = default)
     {
         Cliente? cliente = null;
@@ -44,7 +22,6 @@ public  class ClienteRepository
         await using (_connection)
         {
             await _connection.OpenAsync(ct);
-
             await using (var cmd = _connection.CreateCommand())
             {
                 cmd.CommandText = @"SELECT c.id           AS Id
@@ -64,23 +41,49 @@ public  class ClienteRepository
 
                 await using (var reader = await cmd.ExecuteReaderAsync(ct))
                 {
-                    while (await reader.ReadAsync())
+                    while (await reader.ReadAsync(ct))
                     {
                         cliente ??= new Cliente(
-                            reader.GetInt32(0),
-                            reader.GetInt32(1),
-                            reader.GetInt32(2));
+                            Id: reader.GetInt32(0),
+                            Limite: reader.GetInt32(1),
+                            Saldo: reader.GetInt32(2));
 
                         if(!reader.IsDBNull(3))
-                            cliente.Transacoes.Add(new Transacao(
-                                descricao: reader.GetString(3),
-                                valor: reader.GetInt32(4),
-                                tipo: reader.GetString(5)));
+                            cliente.Value.Add(new Transacao(
+                                Descricao: reader.GetString(3),
+                                Valor: reader.GetInt32(4),
+                                Tipo: reader.GetString(5)));
                     }
                 }
             }
             return cliente;
         }
+    }
+
+    public virtual async Task<ClienteModel?> CrebitarAsync(Crebitar crebitar, CancellationToken ct = default)
+    {
+        await using var cmd = _datasource.CreateCommand();
+        cmd.CommandText = @"SELECT novo_saldo, novo_limite, crebitou
+                              FROM atualiza_saldo_cliente_and_insere_transacao($1, $2, $3, $4);";
+
+        cmd.Parameters.AddWithValue(crebitar.IdCliente);
+        cmd.Parameters.AddWithValue(crebitar.Valor);
+        cmd.Parameters.AddWithValue(crebitar.Tipo);
+        cmd.Parameters.AddWithValue(crebitar.Descricao);
+        
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            if (reader.GetInt32(2) > 0)
+            {
+                return new ClienteModel
+                {
+                    Limite = reader.GetInt32(0),
+                    Saldo = reader.GetInt32(1)
+                };
+            }
+        }
+        return null;
     }
     
     public virtual async Task<IReadOnlyCollection<Cliente>> ObterTodosClientesAsync(CancellationToken ct = default)

@@ -17,7 +17,7 @@ public class TransacaoRequest
     {
         return id > 0 && 
                TiposValidos.Contains(Tipo) 
-               && !string.IsNullOrWhiteSpace(Descricao) && Descricao.Length <= 0 &&
+               && !string.IsNullOrWhiteSpace(Descricao) && Descricao.Length <= 10 &&
                Valor > 0;
     }
 }

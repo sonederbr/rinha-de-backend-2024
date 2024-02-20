@@ -1,7 +1,7 @@
 ﻿using Api.Endpoints.Cliente.Dtos;
 using Api.Model;
 using Api.Repository;
-
+using Microsoft.Extensions.Caching.Memory;
 namespace Api.Endpoints.Cliente;
 
 public static class PostTransacao
@@ -23,42 +23,23 @@ public static class PostTransacao
         [FromRoute] int id,
         [FromBody] TransacaoRequest req,
         [FromServices] ClienteRepository repository,
+        [FromServices] IMemoryCache cache,
         CancellationToken ct)
     {
         if (!req.EhValido(id))
             return Results.BadRequest("Requisicao inválida!");
 
-        var cliente = await repository.ObterClienteAsync(id, ct);
+        if (cache.Get(id) is null)
+            return Results.NotFound("Cliente não encontrado!");
 
-        if (cliente is null)
-            return Results.NotFound("Cliente nao encontrado!");
+        var result = await repository.CrebitarAsync(new Crebitar(
+            IdCliente: id,
+            Valor: req.Valor,
+            Tipo: req.Tipo,
+            Descricao: req.Descricao), ct);
 
-        switch (req.Tipo)
-        {
-            case "d":
-                cliente.Saldo -= req.Valor;
-                if (Math.Abs(cliente.Saldo) > cliente.Limite)
-                    return Results.UnprocessableEntity();
-                break;
-            default:
-                cliente.Saldo += req.Valor;
-                break;
-        }
-        
-        // cliente.Transacoes.Add(new Transacao(req.Descricao, req.Valor, req.Tipo,  id));
-        //
-        // await repository.Atualizar(cliente, ct);
-        //
-        // var ret = await repository.SalvarAlteracoesAsync(ct);
-        // if (ret < 1)
-        //     return Results.StatusCode(503);
-
-        var result = new TransacaoResponse
-        {
-            Saldo = cliente.Saldo,
-            Limite = cliente.Limite
-        };
-
-        return Results.Ok(result);
+        return !result.HasValue
+            ? Results.UnprocessableEntity()
+            : Results.Ok(new TransacaoResponse(result.Value.Saldo, result.Value.Limite));
     }
 }

@@ -28,17 +28,17 @@ public static class GetExtrato
     {
         if (cache.Get(id) is null)
             return Results.NotFound("Cliente não encontrado!");
-        
-        var cliente = await repository.ObterClienteAsync(id, ct);
+
+        var cliente = await repository.ObterExtratoAsync(id);     
         var result = new ExtratoResponse
         {
             Saldo = new()
             {
-                Total = cliente!.Saldo,
+                Total = cliente.Value.Saldo,
                 DataExtrato = DateTime.UtcNow,
-                Limite = cliente.Limite
+                Limite = cliente.Value.Limite
             },
-            UltimasTransacoes = cliente.Transacoes.Select(
+            UltimasTransacoes = cliente.Value.Transacoes.Select(
                 t => new ExtratoResponse.TransacaoCliente()
                 {
                     Valor = t.Valor,

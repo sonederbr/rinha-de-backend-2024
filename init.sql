@@ -1,21 +1,7 @@
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
-
 CREATE UNLOGGED TABLE cliente (
-     id integer PRIMARY KEY NOT NULL,
-     saldo integer NOT NULL,
-     limite integer NOT NULL
+    id integer PRIMARY KEY NOT NULL,
+    saldo integer NOT NULL,
+    limite integer NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_idcliente
@@ -24,17 +10,16 @@ CREATE UNIQUE INDEX idx_idcliente
 CLUSTER cliente USING idx_idcliente;
 
 CREATE UNLOGGED TABLE transacao (
-   id SERIAL PRIMARY KEY,
-   valor integer NOT NULL,
-   tipo char(1) NOT NULL,
-   descricao varchar(250) NOT NULL,
-   realizada_em timestamp NOT NULL,
-   idcliente integer NOT NULL
+    id SERIAL PRIMARY KEY,
+    valor integer NOT NULL,
+    tipo char(1) NOT NULL,
+    descricao varchar(250) NOT NULL,
+    realizada_em timestamp NOT NULL,
+    idcliente integer NOT NULL
 );
 
--- CREATE INDEX idx_transacao_idcliente 
--- ON transacao (idcliente);
--- CLUSTER transacao USING idx_transacao_idcliente;
+CREATE INDEX idx_transacao_idcliente 
+ON transacao (idcliente);
 
 CREATE OR REPLACE FUNCTION atualiza_saldo_cliente_and_insere_transacao(
     p_cliente_id INT,
@@ -52,8 +37,9 @@ BEGIN
         return;
     END IF;
 
-    LOCK TABLE cliente IN ROW EXCLUSIVE MODE;
-    SELECT saldo, limite INTO v_saldo, v_limite FROM cliente WHERE id = p_cliente_id FOR NO KEY UPDATE;
+    PERFORM pg_advisory_xact_lock(p_cliente_id);
+
+    SELECT saldo, limite INTO v_saldo, v_limite FROM cliente WHERE id = p_cliente_id;
 
     IF p_tipo = 'd' THEN
         v_saldo = v_saldo - p_valor;
@@ -78,9 +64,3 @@ INSERT INTO cliente (id, saldo, limite) VALUES (2, 0, 80000);
 INSERT INTO cliente (id, saldo, limite) VALUES (3, 0, 1000000);
 INSERT INTO cliente (id, saldo, limite) VALUES (4, 0, 10000000);
 INSERT INTO cliente (id, saldo, limite) VALUES (5, 0, 500000);
-
--- 1	100000	0
--- 2	80000	0
--- 3	1000000	0
--- 4	10000000	0
--- 5	500000	0

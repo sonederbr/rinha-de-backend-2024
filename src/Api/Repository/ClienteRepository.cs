@@ -30,8 +30,8 @@ public class ClienteRepository
                                          , t.valor        AS Valor
                                          , t.tipo         AS Tipo
                                          , t.realizada_em AS DataTransacao
-                                      FROM cliente c
-                                      LEFT JOIN transacao t ON t.idcliente = c.id
+                                      FROM clientes c
+                                      LEFT JOIN transacoes t ON t.idcliente = c.id
                                      WHERE c.id = $1
                                      ORDER BY t.realizada_em DESC
                                      LIMIT 10;";
@@ -86,7 +86,7 @@ public class ClienteRepository
         var clientes = new List<Cliente>();
         await using var cmd = _datasource.CreateCommand();
         cmd.CommandText = @"SELECT id, limite, saldo
-                              FROM cliente
+                              FROM clientes
                              ORDER BY id ASC ;";
 
         await using var reader = await cmd.ExecuteReaderAsync(ct);

@@ -52,10 +52,10 @@ using (var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>(
     Console.WriteLine("Cache is null >>>>>>>" + cache == null);
 
     cache.Set(1, new Cliente(1, 100000, 0));
-    cache.Set(1, new Cliente(2, 80000, 0));
-    cache.Set(1, new Cliente(3, 1000000, 0));
-    cache.Set(1, new Cliente(4, 10000000, 0));
-    cache.Set(1, new Cliente(5, 500000, 0));
+    cache.Set(2, new Cliente(2, 80000, 0));
+    cache.Set(3, new Cliente(3, 1000000, 0));
+    cache.Set(4, new Cliente(4, 10000000, 0));
+    cache.Set(5, new Cliente(5, 500000, 0));
 }
 
 app.Run();

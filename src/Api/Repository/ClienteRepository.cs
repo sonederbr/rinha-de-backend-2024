@@ -1,4 +1,3 @@
-using Api.Endpoints.Cliente.Dtos;
 using Api.Model;
 using Npgsql;
 
@@ -14,7 +13,7 @@ public class ClienteRepository
         _datasource = datasource;
         _connection = connection;
     }
-    
+
     public virtual async Task<Cliente?> ObterExtratoAsync(int id, CancellationToken ct = default)
     {
         Cliente? cliente = null;
@@ -48,7 +47,7 @@ public class ClienteRepository
                             Limite: reader.GetInt32(1),
                             Saldo: reader.GetInt32(2));
 
-                        if(!reader.IsDBNull(3))
+                        if (!reader.IsDBNull(3))
                             cliente.Value.Add(new Transacao(
                                 Descricao: reader.GetString(3),
                                 Valor: reader.GetInt32(4),
@@ -56,6 +55,7 @@ public class ClienteRepository
                     }
                 }
             }
+
             return cliente;
         }
     }
@@ -70,22 +70,17 @@ public class ClienteRepository
         cmd.Parameters.AddWithValue(crebitar.Valor);
         cmd.Parameters.AddWithValue(crebitar.Tipo);
         cmd.Parameters.AddWithValue(crebitar.Descricao);
-        
+
         await using var reader = await cmd.ExecuteReaderAsync(ct);
-        while (await reader.ReadAsync(ct))
+        if (!await reader.ReadAsync(ct)) return null;
+        if (reader.GetInt32(2) == 0) return null;
+        return new ClienteModel
         {
-            if (reader.GetInt32(2) > 0)
-            {
-                return new ClienteModel
-                {
-                    Limite = reader.GetInt32(0),
-                    Saldo = reader.GetInt32(1)
-                };
-            }
-        }
-        return null;
+            Limite = reader.GetInt32(0),
+            Saldo = reader.GetInt32(1)
+        };
     }
-    
+
     public virtual async Task<IReadOnlyCollection<Cliente>> ObterTodosClientesAsync(CancellationToken ct = default)
     {
         var clientes = new List<Cliente>();
@@ -102,6 +97,7 @@ public class ClienteRepository
                 reader.GetInt32(1),
                 reader.GetInt32(2)));
         }
+
         return clientes.AsReadOnly();
     }
 }

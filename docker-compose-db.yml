@@ -10,7 +10,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init-ddl.sql:/docker-entrypoint-initdb.d/init-ddl.sql
+      - ./init-functions.sql:/docker-entrypoint-initdb.d/init-functions.sql
     command: postgres -c checkpoint_timeout=600 -c max_wal_size=4096 -c synchronous_commit=0 -c fsync=0 -c full_page_writes=0
   
   

@@ -2,7 +2,19 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api", "src\Api\Api.csproj", "{AC762D64-3851-4D3B-BDCA-660808C82038}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunctionalTests", "tests\FunctionalTests\FunctionalTests.csproj", "{41A0F6C2-B99D-42A2-97EA-5970678CDADE}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Deploy", "Deploy", "{B5259775-7A83-4015-BEDC-BD7FE0C16E46}"
+	ProjectSection(SolutionItems) = preProject
+		docker-compose-db.yml = docker-compose-db.yml
+		docker-compose.yml = docker-compose.yml
+		Dockerfile = Dockerfile
+		executar-teste-local.ps1 = executar-teste-local.ps1
+		executar-teste-local.sh = executar-teste-local.sh
+		init-ddl.sql = init-ddl.sql
+		init-functions.sql = init-functions.sql
+		nginx.conf = nginx.conf
+		README.md = README.md
+		RinhaBackendCrebitosSimulation.scala = RinhaBackendCrebitosSimulation.scala
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,9 +26,5 @@ Global
 		{AC762D64-3851-4D3B-BDCA-660808C82038}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AC762D64-3851-4D3B-BDCA-660808C82038}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AC762D64-3851-4D3B-BDCA-660808C82038}.Release|Any CPU.Build.0 = Release|Any CPU
-		{41A0F6C2-B99D-42A2-97EA-5970678CDADE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{41A0F6C2-B99D-42A2-97EA-5970678CDADE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{41A0F6C2-B99D-42A2-97EA-5970678CDADE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{41A0F6C2-B99D-42A2-97EA-5970678CDADE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

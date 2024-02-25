@@ -20,9 +20,9 @@ public class ObterExtratoEndpoint : IClassFixture<CustomApiFactory>
         var response = await _client.GetAndDeserializeAsync<ExtratoResponse>("/clientes/1/extrato");
 
         // assert
-        response.Saldo.Should().NotBeNull();
-        response.Saldo.Total.Should().Be(0);
-        response.Saldo.Limite.Should().Be(100000);
+        response.ExtratoSaldo.Should().NotBeNull();
+        response.ExtratoSaldo.Total.Should().Be(0);
+        response.ExtratoSaldo.Limite.Should().Be(100000);
         response.UltimasTransacoes.Count.Should().Be(0);
     }
 }

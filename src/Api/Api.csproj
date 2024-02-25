@@ -23,10 +23,6 @@
         </Content>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Repository\" />
-    </ItemGroup>
-
     <PropertyGroup>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <NoWarn>$(NoWarn);1591</NoWarn>

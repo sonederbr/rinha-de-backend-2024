@@ -1,4 +1,4 @@
-namespace Api.Endpoints.Cliente.Dtos;
+namespace Api.Contratos;
 
 public class TransacaoRequest
 {
@@ -13,10 +13,9 @@ public class TransacaoRequest
     [JsonPropertyName("descricao")]
     public string Descricao { get; set; }
 
-    public bool EhValido(int id)
+    public bool EhValido()
     {
-        return id > 0 && 
-               TiposValidos.Contains(Tipo) 
+        return TiposValidos.Contains(Tipo) 
                && !string.IsNullOrWhiteSpace(Descricao) && Descricao.Length <= 10 &&
                Valor > 0;
     }

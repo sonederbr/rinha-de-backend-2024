@@ -1,4 +1,4 @@
-namespace Api.Endpoints.Cliente.Dtos;
+namespace Api.Contratos;
 
 public class TransacaoResponse(int saldo, int limite)
 {

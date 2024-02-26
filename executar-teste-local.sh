@@ -16,6 +16,8 @@ runGatling() {
 startTest() {
     for i in {1..20}; do
         # 2 requests to wake the 2 api instances up :)
+        curl --fail http://localhost:9999/admin/db-reset && \
+        echo "limpou o banco" && \     
         curl --fail http://localhost:9999/clientes/1/extrato && \
         echo "" && \
         curl --fail http://localhost:9999/clientes/1/extrato && \

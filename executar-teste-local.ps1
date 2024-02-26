@@ -15,6 +15,8 @@ function Start-Test {
     for ($i = 1; $i -le 20; $i++) {
         try {
             # 2 requests to wake the 2 API instances up :)
+            Invoke-RestMethod -Uri "http://localhost:9999/admin/db-reset" -ErrorAction Stop
+            Write-Host "limpou o banco"
             Invoke-RestMethod -Uri "http://localhost:9999/clientes/1/extrato" -ErrorAction Stop
             Write-Host ""
             Invoke-RestMethod -Uri "http://localhost:9999/clientes/1/extrato" -ErrorAction Stop

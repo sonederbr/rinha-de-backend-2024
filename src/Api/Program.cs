@@ -1,12 +1,11 @@
 using Api;
 using Api.Contratos;
 using Npgsql;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAppSettingsEnvironment();
-
-builder.Services.AddNpgsqlDataSource(builder.Configuration.GetConnectionString("RinhaDbContext")!);
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -14,7 +13,12 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
 });
 
+builder.Services.AddNpgsqlDataSource(builder.Configuration.GetConnectionString("RinhaDbContext")!);
+
 var app = builder.Build();
+
+app.UseMetricServer();
+app.UseHttpMetrics();
 
 var dbFuncs = new Dictionary<string, string>
 {
@@ -32,35 +36,25 @@ app.MapGet("/clientes/{id}/extrato", async (
 
     await using (connection)
     {
-        await connection.OpenAsync(ct);
+        await connection.OpenAsync();
 
         await using var cmd = connection.CreateCommand();
-        cmd.CommandText = "SELECT * FROM obter_extrato_cliente($1);";
+        cmd.CommandText =  "SELECT * FROM obter_extrato_cliente($1);";
         cmd.Parameters.AddWithValue(id);
 
-        using var reader = await cmd.ExecuteReaderAsync(ct);
-        await reader.ReadAsync(ct);
+        await using var reader = await cmd.ExecuteReaderAsync();
+        await reader.ReadAsync();
 
-        var response = new ExtratoResponse
-        {
-            ExtratoSaldo = new()
-            {
-                Total = reader.GetInt32(0),
-                Limite = reader.GetInt32(1),
-                DataExtrato = reader.GetDateTime(2)
-            }
-        };
+        ExtratoSaldoClienteResponse extrato = new(reader.GetInt32(0), reader.GetDateTime(2), reader.GetInt32(1));
+        var transacoes = new List<ExtratoTransacaoClienteResponse>();
+        while (await reader.ReadAsync())
+            transacoes.Add(
+                new(reader.GetInt32(3),
+                    reader.GetString(4),
+                    reader.GetString(5),
+                    reader.GetDateTime(6)));
 
-        while (await reader.ReadAsync(ct))
-            response.AdicionarTransacao(new ExtratoTransacaoClienteResponse()
-            {
-                Valor = reader.GetInt32(3),
-                Tipo = reader.GetString(4),
-                Descricao = reader.GetString(5),
-                RealizadaEm = reader.GetDateTime(6),
-            });
-
-        return Results.Ok(response);
+        return Results.Ok(new ExtratoResponse(extrato, transacoes));
     }
 });
 
@@ -78,21 +72,31 @@ app.MapPost("/clientes/{id}/transacoes", async (
 
     await using (connection)
     {
-        await connection.OpenAsync(ct);
+        await connection.OpenAsync();
         await using var cmd = connection.CreateCommand();
         cmd.CommandText = $"SELECT saldo_atualizado, limite_atual, linhas_afetadas FROM {dbFuncs[req.Tipo]}_saldo_cliente_e_insere_transacao($1, $2, $3);";
         cmd.Parameters.AddWithValue(id);
         cmd.Parameters.AddWithValue(req.Valor);
-        cmd.Parameters.AddWithValue(req.Descricao); 
-        using var reader = await cmd.ExecuteReaderAsync(ct);
-        await reader.ReadAsync(ct);
+        cmd.Parameters.AddWithValue(req.Descricao);
+        await using var reader = await cmd.ExecuteReaderAsync();
+        await reader.ReadAsync();
 
-        if (req.Tipo.Equals("c"))
-            return Results.Ok(new TransacaoResponse(saldo: reader.GetInt32(0), limite: reader.GetInt32(1)));
-        
-        return reader.GetInt16(2) == 0
-            ? Results.UnprocessableEntity()
-            : Results.Ok(new TransacaoResponse(saldo: reader.GetInt32(0), limite: reader.GetInt32(1)));
+        return reader.GetInt16(2) == 0 
+            ? Results.UnprocessableEntity() 
+            : Results.Ok(new TransacaoResponse(reader.GetInt32(0), reader.GetInt32(1)));
+    }
+});
+
+app.MapGet("/admin/db-reset", async (NpgsqlConnection conn) =>
+{
+    await using (conn)
+    {
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateBatch();
+        cmd.BatchCommands.Add(new NpgsqlBatchCommand("update saldo_cliente set saldo = 0"));
+        cmd.BatchCommands.Add(new NpgsqlBatchCommand("truncate table transacao_cliente"));
+        await using var reader = await cmd.ExecuteReaderAsync();
+        return Results.Ok("db reset!");
     }
 });
 

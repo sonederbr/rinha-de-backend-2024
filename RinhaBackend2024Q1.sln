@@ -14,6 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Deploy", "Deploy", "{B52597
 		nginx.conf = nginx.conf
 		README.md = README.md
 		RinhaBackendCrebitosSimulation.scala = RinhaBackendCrebitosSimulation.scala
+		docker-compose-dev.yml = docker-compose-dev.yml
 	EndProjectSection
 EndProject
 Global

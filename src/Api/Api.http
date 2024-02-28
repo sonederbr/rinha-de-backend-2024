@@ -13,3 +13,19 @@ Content-Type: application/json
   "tipo" : "d",
   "descricao" : "teste"
 }
+
+###
+
+POST {{Api_HostAddress}}/clientes/1/transacoes
+Content-Type: application/json
+
+{
+  "valor": 100000,
+  "tipo" : "c",
+  "descricao" : "teste"
+}
+
+###
+
+GET {{Api_HostAddress}}/clientes/1/extrato
+Accept: application/json

@@ -2,7 +2,6 @@ using Api;
 using Api.Endpoints;
 using Api.Middlewares;
 using Microsoft.AspNetCore.Rewrite;
-using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,8 +28,6 @@ var app = builder.Build();
 
 if (builder.Environment.IsDevelopment())
 {
-    app.UseMetricServer();
-    app.UseHttpMetrics();
     app.UseRewriter(new RewriteOptions().AddRedirect("^$", "swagger"));
     app.UseMySwagger();
 }

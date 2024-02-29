@@ -17,7 +17,7 @@ services:
       resources:
         limits:
           cpus: "0.75"
-          memory: "340MB"
+          memory: "390MB"
           
   api01: &api
     image: sonederbr/rinha-backend-2024-q1:latest
@@ -36,7 +36,7 @@ services:
       resources:
         limits:
           cpus: "0.30"
-          memory: "100MB"
+          memory: "70MB"
           
   api02:
     <<: *api
@@ -58,7 +58,7 @@ services:
       resources:
         limits:
           cpus: "0.15"
-          memory: "10MB"
+          memory: "20MB"
 
 networks:
   default:
